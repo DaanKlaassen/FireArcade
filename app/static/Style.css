@@ -1,2 +1,16 @@
 /* KlantenLogin */
-
+.bg-purple-primary {
+            background-color: #6366F1;
+        }
+        .text-purple-primary {
+            color: #6366F1;
+        }
+        .border-purple-primary {
+            border-color: #6366F1;
+        }
+        .hover\:bg-purple-dark:hover {
+            background-color: #4F46E5;
+        }
+        .focus\:ring-purple-primary:focus {
+            --tw-ring-color: #6366F1;
+        }

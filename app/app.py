@@ -67,7 +67,25 @@ def login():
     return render_template('KlantenLogin.html')
 
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+    data = request.json
+    email = data.get('email')
+    phone = data.get('phone')
+    new_password = data.get('new_password')
+
+    user = User.query.filter_by(emailadres=email, telefoonnummer=phone).first()
+
+    if user:
+        user.wachtwoord_hash = generate_password_hash(new_password)
+        db.session.commit()
+        return {'success': True, 'message': 'Wachtwoord succesvol gewijzigd!'}
+    else:
+        return {'success': False, 'message': 'Geen gebruiker gevonden met deze gegevens.'}, 400
+
+
+# Registratie functie
+@app.route('/registreren', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
         naam = request.form['name']  # Haal de naam op uit het formulier
@@ -96,11 +114,13 @@ def register():
     return render_template('KlantenRegistreren.html')
 
 
+# Test Pagina
 @app.route('/yippee')
 def yippee():
     return render_template('yippee.html')
 
 
+# logout functie
 @app.route('/logout')
 @login_required
 def logout():
