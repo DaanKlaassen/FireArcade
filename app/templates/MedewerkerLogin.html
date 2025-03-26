@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,7 +9,7 @@
 </head>
 <body class="font-sans">
 <div class="min-h-screen flex">
-    <div class="hidden lg:flex lg:w-2/5 bg-purple-primary p-12 items-center">
+    <div class="hidden lg:flex lg:w-2/5 medewerker-bg-purple p-12 items-center">
         <div class="text-white max-w-xs">
             <h1 class="text-3xl font-bold mb-2">Welkom Medewerker</h1>
             <p class="text-sm opacity-80">Log in om toegang te krijgen tot de medewerkersomgeving.</p>
@@ -33,123 +33,66 @@
                 {% endwith %}
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Emailadres</label>
                     <input type="text" name="email" id="email" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-medewerker-purple">
                 </div>
-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Wachtwoord</label>
                     <input type="password" name="password" id="password" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-medewerker-purple">
                     <div class="flex justify-between items-center mt-1">
-                        <button type="button" id="show-password" class="text-sm text-purple-primary hover:underline">
+                        <button type="button" id="show-password"
+                                class="text-sm medewerker-text-purple hover:underline">
                             Toon wachtwoord
-                        </button>
-                        <button type="button" id="forgot-password"
-                                class="text-sm text-purple-primary hover:underline">
-                            Wachtwoord vergeten?
                         </button>
                     </div>
                 </div>
-
                 <button type="submit"
-                        class="w-full bg-purple-primary hover:bg-purple-dark text-white py-2 px-4 rounded-md transition-colors">
+                        class="w-full medewerker-bg-purple hover:medewerker-bg-purple-dark text-white py-2 px-4 rounded-md transition-colors">
                     Log in
                 </button>
-
                 <div class="text-center text-sm text-gray-600">
-                    Geen medewerker? <a href="login" class="text-purple-primary hover:underline">Log in als klant</a>
+                    Geen medewerker? <a href="/"
+                                        class="medewerker-text-purple hover:underline">Log in als klant</a>
                 </div>
-
             </form>
         </div>
     </div>
 </div>
 
-<!-- Modal -->
-<div id="modal" class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center hidden">
-    <div class="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h3 class="text-lg font-semibold mb-4">Wachtwoord wijzigen</h3>
-        <p class="text-sm text-gray-600 mb-4">Voer uw e-mailadres en telefoonnummer in om uw wachtwoord te wijzigen.</p>
-        <input type="email" id="reset-email" placeholder="Uw e-mailadres"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-2">
-        <input type="text" id="reset-phone" placeholder="Uw telefoonnummer"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-4">
-        <input type="password" id="new-password" placeholder="Nieuw wachtwoord"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-4">
-
-        <!-- Confirmation message -->
-        <div id="confirmation-message" class="hidden text-green-600 text-sm mb-4">
-            Wachtwoord succesvol gewijzigd!
-        </div>
-
-        <div class="flex justify-end space-x-2">
-            <button id="close-modal" class="px-4 py-2 bg-gray-300 rounded-md">Annuleren</button>
-            <button id="change-password" class="px-4 py-2 bg-purple-primary text-white rounded-md">Wijzigen</button>
-        </div>
-    </div>
+<div class="flex justify-end space-x-2">
+    <button id="close-modal"
+            class="px-4 py-2 bg-gray-300 rounded-md">Annuleren
+    </button>
+    <button id="change-password"
+            class="px-4 py-2 medewerker-bg-purple text-white rounded-md">Wijzigen
+    </button>
 </div>
-
+</div>
+</div>
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        let forgotPasswordBtn = document.getElementById("forgot-password");
-        let modal = document.getElementById("modal");
-        let closeModalBtn = document.getElementById("close-modal");
-        let changePasswordBtn = document.getElementById("change-password");
-        let confirmationMessage = document.getElementById("confirmation-message");
         let showPasswordBtn = document.getElementById("show-password");
         let passwordField = document.getElementById("password");
 
         // Functie om de invoervelden en labels te resetten
         function resetFieldsAndLabels() {
-            // Reset de velden in de modal
-            document.getElementById("reset-email").value = '';
-            document.getElementById("reset-phone").value = '';
-            document.getElementById("new-password").value = '';
+            // Reset de velden in het inlogformulier als ze bestaan
+            let emailInput = document.getElementById("email");
+            let passwordInput = document.getElementById("password");
 
-            // Reset de velden in het inlogformulier
-            document.getElementById("email").value = '';
-            document.getElementById("password").value = '';
+            if (emailInput) emailInput.value = "";
+            if (passwordInput) passwordInput.value = "";
 
-            // Reset de tekst van de labels in het inlogformulier
-            document.querySelector('label[for="email"]').textContent = 'Emailadres';
-            document.querySelector('label[for="password"]').textContent = 'Wachtwoord';
-        }
+            // Reset de velden in de modal alleen als ze bestaan
+            let resetEmail = document.getElementById("reset-email");
+            let resetPhone = document.getElementById("reset-phone");
+            let newPassword = document.getElementById("new-password");
 
-        if (forgotPasswordBtn && modal && closeModalBtn && changePasswordBtn) {
-            forgotPasswordBtn.addEventListener("click", function () {
-                resetFieldsAndLabels();  // Reset de velden en labels wanneer de modal geopend wordt
-                modal.classList.remove("hidden");
-            });
-
-            closeModalBtn.addEventListener("click", function () {
-                modal.classList.add("hidden");
-            });
-
-            changePasswordBtn.addEventListener("click", async function () {
-                let email = document.getElementById("reset-email").value;
-                let phone = document.getElementById("reset-phone").value;
-                let newPassword = document.getElementById("new-password").value;
-
-                if (email && phone && newPassword) {
-                    await fetch("/reset_password", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({email, phone, new_password: newPassword})
-                    });
-
-                    // Show confirmation message
-                    confirmationMessage.classList.remove("hidden");
-
-                    // Hide the modal after a short delay
-                    setTimeout(function () {
-                        modal.classList.add("hidden");
-                    }, 2000);  // Hide after 2 seconds
-                }
-            });
-        } else {
-            console.error("Eén of meer elementen ontbreken!");
+            if (resetEmail) resetEmail.value = "";
+            if (resetPhone) resetPhone.value = "";
+            if (newPassword) newPassword.value = "";
         }
 
         // Toggle password visibility
@@ -166,6 +109,9 @@
         // Reset de labels en velden bij het laden van de pagina
         resetFieldsAndLabels();
     });
+
 </script>
+
+
 </body>
 </html>

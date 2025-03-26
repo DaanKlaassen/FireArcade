@@ -33,23 +33,25 @@
                 {% endwith %}
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Email</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Emailadres</label>
                     <input type="text" name="email" id="email" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Password</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Wachtwoord</label>
                     <input type="password" name="password" id="password" required
                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
                     <div class="flex justify-between items-center mt-1">
                         <button type="button" id="show-password" class="text-sm text-purple-primary hover:underline">
                             Toon wachtwoord
                         </button>
+                        {% if rol != 'medewerker' %}
                         <button type="button" id="forgot-password"
                                 class="text-sm text-purple-primary hover:underline">
                             Wachtwoord vergeten?
                         </button>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -64,8 +66,7 @@
 
                 <!-- button naar medewerker login pagina -->
                 <button class="text-center text-sm text-gray-600">
-                    Inloggen als een <a href="medewerkers/login" class="medewerker-login-button hover:underline">Medewerker?
-                </a>
+                    Inloggen als een <a href="medewerker_login" class="medewerker-login-button hover:underline">Medewerker?</a>
                 </button>
 
             </form>
@@ -85,6 +86,9 @@
         <input type="password" id="new-password" placeholder="Nieuw wachtwoord"
                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-4">
 
+        <!-- Error message -->
+        <div id="error-message" class="hidden text-red-600 text-sm mb-4"></div>
+
         <!-- Confirmation message -->
         <div id="confirmation-message" class="hidden text-green-600 text-sm mb-4">
             Wachtwoord succesvol gewijzigd!
@@ -98,80 +102,60 @@
 </div>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        let forgotPasswordBtn = document.getElementById("forgot-password");
-        let modal = document.getElementById("modal");
-        let closeModalBtn = document.getElementById("close-modal");
-        let changePasswordBtn = document.getElementById("change-password");
-        let confirmationMessage = document.getElementById("confirmation-message");
-        let showPasswordBtn = document.getElementById("show-password");
-        let passwordField = document.getElementById("password");
+document.addEventListener("DOMContentLoaded", function () {
+    let forgotPasswordBtn = document.getElementById("forgot-password");
+    let modal = document.getElementById("modal");
+    let closeModalBtn = document.getElementById("close-modal");
+    let changePasswordBtn = document.getElementById("change-password");
+    let confirmationMessage = document.getElementById("confirmation-message");
+    let errorMessage = document.getElementById("error-message");
+    let showPasswordBtn = document.getElementById("show-password");
+    let passwordField = document.getElementById("password");
 
-        // Functie om de invoervelden en labels te resetten
-        function resetFieldsAndLabels() {
-            // Reset de velden in de modal
-            document.getElementById("reset-email").value = '';
-            document.getElementById("reset-phone").value = '';
-            document.getElementById("new-password").value = '';
-
-            // Reset de velden in het inlogformulier
-            document.getElementById("email").value = '';
-            document.getElementById("password").value = '';
-
-            // Reset de tekst van de labels in het inlogformulier
-            document.querySelector('label[for="email"]').textContent = 'Emailadres';
-            document.querySelector('label[for="password"]').textContent = 'Wachtwoord';
-        }
-
-        if (forgotPasswordBtn && modal && closeModalBtn && changePasswordBtn) {
-            forgotPasswordBtn.addEventListener("click", function () {
-                resetFieldsAndLabels();  // Reset de velden en labels wanneer de modal geopend wordt
-                modal.classList.remove("hidden");
-            });
-
-            closeModalBtn.addEventListener("click", function () {
-                modal.classList.add("hidden");
-            });
-
-            changePasswordBtn.addEventListener("click", async function () {
-                let email = document.getElementById("reset-email").value;
-                let phone = document.getElementById("reset-phone").value;
-                let newPassword = document.getElementById("new-password").value;
-
-                if (email && phone && newPassword) {
-                    await fetch("/reset_password", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({email, phone, new_password: newPassword})
-                    });
-
-                    // Show confirmation message
-                    confirmationMessage.classList.remove("hidden");
-
-                    // Hide the modal after a short delay
-                    setTimeout(function () {
-                        modal.classList.add("hidden");
-                    }, 2000);  // Hide after 2 seconds
-                }
-            });
-        } else {
-            console.error("Eén of meer elementen ontbreken!");
-        }
-
-        // Toggle password visibility
-        showPasswordBtn.addEventListener("click", function () {
-            if (passwordField.type === "password") {
-                passwordField.type = "text";
-                showPasswordBtn.textContent = "Verberg wachtwoord";
-            } else {
-                passwordField.type = "password";
-                showPasswordBtn.textContent = "Toon wachtwoord";
-            }
+    if (forgotPasswordBtn) {
+        forgotPasswordBtn.addEventListener("click", function () {
+            errorMessage.classList.add("hidden");  // Verberg vorige fouten
+            confirmationMessage.classList.add("hidden");
+            modal.classList.remove("hidden");
         });
+    }
 
-        // Reset de labels en velden bij het laden van de pagina
-        resetFieldsAndLabels();
+    closeModalBtn.addEventListener("click", function () {
+        modal.classList.add("hidden");
     });
+
+    changePasswordBtn.addEventListener("click", async function () {
+        let email = document.getElementById("reset-email").value;
+        let phone = document.getElementById("reset-phone").value;
+        let newPassword = document.getElementById("new-password").value;
+
+        if (email && phone && newPassword) {
+            let response = await fetch("/reset_password", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({email, phone, new_password: newPassword})
+            });
+
+            let data = await response.json();
+
+            if (response.ok) {
+                confirmationMessage.classList.remove("hidden");
+                errorMessage.classList.add("hidden");
+
+                setTimeout(() => modal.classList.add("hidden"), 2000);
+            } else {
+                confirmationMessage.classList.add("hidden");
+                errorMessage.textContent = data.message;
+                errorMessage.classList.remove("hidden");
+            }
+        }
+    });
+
+    showPasswordBtn.addEventListener("click", function () {
+        passwordField.type = passwordField.type === "password" ? "text" : "password";
+        showPasswordBtn.textContent = passwordField.type === "password" ? "Toon wachtwoord" : "Verberg wachtwoord";
+    });
+});
 </script>
 </body>
 </html>

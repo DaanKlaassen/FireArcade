@@ -67,6 +67,27 @@ def login():
     return render_template('KlantenLogin.html')
 
 
+@app.route('/medewerker_login', methods=['GET', 'POST'])
+def medewerker_login():
+    if request.method == 'POST':
+        emailadres = request.form.get('email')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(emailadres=emailadres).first()
+
+        if user and check_password_hash(user.wachtwoord_hash, password):
+            if user.rol == "medewerker":  # Controleer of de gebruiker een medewerker is
+                login_user(user)
+                return redirect(url_for('yippee'))
+            else:
+                flash('Je hebt geen toegang tot de medewerkersomgeving.', 'error')
+                return redirect(url_for('login'))  # Stuur terug naar de algemene login
+        else:
+            flash('Verkeerde inloggegevens. Probeer opnieuw.', 'error')
+
+    return render_template('MedewerkerLogin.html')
+
+
 @app.route('/reset_password', methods=['POST'])
 def reset_password():
     data = request.json
@@ -77,11 +98,15 @@ def reset_password():
     user = User.query.filter_by(emailadres=email, telefoonnummer=phone).first()
 
     if user:
+        if user.rol == 'medewerker':  # Blokkeer medewerkers van resetten
+            return {'success': False,
+                    'message': 'Medewerkers kunnen hun wachtwoord niet wijzigen via deze pagina.'}, 403
+
         user.wachtwoord_hash = generate_password_hash(new_password)
         db.session.commit()
         return {'success': True, 'message': 'Wachtwoord succesvol gewijzigd!'}
-    else:
-        return {'success': False, 'message': 'Geen gebruiker gevonden met deze gegevens.'}, 400
+
+    return {'success': False, 'message': 'Geen gebruiker gevonden met deze gegevens.'}, 400
 
 
 # Registratie functie

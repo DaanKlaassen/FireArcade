@@ -28,9 +28,31 @@
     width: 448px;
 }
 
+/* Medewerker login */
+.medewerker-bg-purple {
+    background-color: #7B1FA2; /* Paars */
+}
+
+.medewerker-text-purple {
+    color: #7B1FA2;
+}
+
+.medewerker-border-purple {
+    border-color: #7B1FA2;
+}
+
+.hover\:medewerker-bg-purple-dark:hover {
+    background-color: #6A1B9A; /* Donkerder paars */
+}
+
+.focus\:ring-medewerker-purple:focus {
+    --tw-ring-color: #7B1FA2;
+}
+
+
+
 /* Registratie */
 
-/* Base styles */
 * {
   margin: 0;
   padding: 0;
