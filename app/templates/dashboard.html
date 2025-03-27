@@ -13,10 +13,18 @@
     <div class="container header-container">
         <div class="logo">FIREARCADE</div>
         <div class="nav-buttons">
-            <a href="/ticket_overview"><button class="action-btn">Tickets</button></a>
-            <a href="/contract_overview"><button class="action-btn">Contracten</button></a>
-            <a href="/KlantOverzicht"><button class="action-btn">Gebruikers</button></a>
-                <a href="/logout" ><button class="action-btn" style="background: #A200C1">Uitloggen</button></a>
+            <a href="/MedewerkerTickets">
+                <button class="action-btn">Tickets</button>
+            </a>
+            <a href="/contract_overview">
+                <button class="action-btn">Contracten</button>
+            </a>
+            <a href="/KlantOverzicht">
+                <button class="action-btn">Gebruikers</button>
+            </a>
+            <a href="/logout">
+                <button class="action-btn" style="background: #A200C1">Uitloggen</button>
+            </a>
         </div>
     </div>
 </header>
@@ -28,22 +36,6 @@
             <!-- Welcome card -->
             <div class="card welcome-card">
                 <h2>Welcome back, {{ current_user.naam }}!</h2>
-            </div>
-
-            <!-- Stats cards -->
-            <div class="stats-grid stats-grid-three">
-                <div class="card stat-card">
-                    <div class="stat-label">Active Tickets</div>
-                    <div class="stat-value">{{ tickets|selectattr('status', 'equalto', 'Open')|list|length }}</div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-label">Machines Owned</div>
-                    <div class="stat-value">5</div>
-                </div>
-                <div class="card stat-card">
-                    <div class="stat-label">Pending Orders</div>
-                    <div class="stat-value">1</div>
-                </div>
             </div>
 
             <!-- Recent Activity -->
@@ -101,17 +93,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Upcoming Maintenance -->
-            <div class="card">
-                <h2>Upcoming Maintenance</h2>
-                <div class="maintenance-list">
-                    <div class="maintenance-item">
-                        <p class="maintenance-title">Street Fighter X - Next Week</p>
-                        <p class="maintenance-desc">Pinball Machine - in 3 days</p>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </main>
@@ -130,9 +111,9 @@
                     <div class="mb-3">
                         <label for="klant" class="form-label">Klant</label>
                         <select type="text" class="form-control" id="klant" name="klant" required>
-                                {% for klant in klanten %}
-                                <option value="{{ klant.id }}">{{ klant.naam }}</option>
-                                {% endfor %}
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.naam }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
@@ -143,6 +124,10 @@
                         <label for="beschrijving" class="form-label">Beschrijving</label>
                         <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4"
                                   required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="MachineNaam" class="form-label">Machine Naam</label>
+                        <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -168,9 +153,9 @@
                     <div class="mb-3">
                         <label for="gebruiker" class="form-label">Klant</label>
                         <select type="text" class="form-control" id="gebruiker" name="gebruiker" required>
-                                {% for klant in klanten %}
-                                <option value="{{ klant.id }}">{{ klant.naam }}</option>
-                                {% endfor %}
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.naam }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">

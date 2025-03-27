@@ -20,6 +20,14 @@
     box-sizing: border-box;
 }
 
+.logo {
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.5px;
+  color: white !important;
+  text-underline: none !important;
+}
+
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--background-color);

@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
+from sqlalchemy.sql import text
 
 # Load environment variables
 load_dotenv()
@@ -130,18 +131,20 @@ def reset_password():
 
 # Registratie functie
 @app.route('/registreren', methods=['GET', 'POST'])
-def register():
+def register(redirect_uri=None):
     if request.method == 'POST':
         naam = request.form['name']
         emailadres = request.form['email']
         password = request.form['password']
         telefoonnummer = request.form['telefoonnummer']
-        redirect_uri = 'klanten_overview' if current_user else 'login'
+        redirect_uri = 'login'
+        if current_user:
+            redirect_uri = 'klanten_overview'
 
         # Controleer of het wachtwoord lang genoeg is
         if len(password) < 10:
             flash('Wachtwoord moet minimaal 10 tekens lang zijn!', 'danger')
-            if current_user:
+            if current_user and redirect_uri:
                 return redirect(url_for(redirect_uri))
             else:
                 return render_template('KlantenRegistreren.html', name=naam, email=emailadres,
@@ -151,7 +154,7 @@ def register():
         user = User.query.filter_by(emailadres=emailadres).first()
         if user:
             flash('Er is al een account met dit e-mailadres!', 'danger')
-            if current_user:
+            if current_user and redirect_uri:
                 return redirect(url_for(redirect_uri))
             else:
                 return render_template('KlantenRegistreren.html')
@@ -171,7 +174,7 @@ def register():
         db.session.commit()
 
         flash('Je account is succesvol aangemaakt! Je kunt nu inloggen.', 'success')
-    if current_user:
+    if current_user and redirect_uri:
         return redirect(url_for(redirect_uri))
     else:
         return render_template('KlantenRegistreren.html')
@@ -187,8 +190,22 @@ class Ticket(db.Model):
     status = db.Column(db.String(50), default='Open')  # Active or Deleted
     toegewezen = db.Column(db.String(255), default='Nog niet toegewezen')
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    MachineNaam = db.Column(db.String(255), nullable=False)
 
     gebruiker = db.relationship('User', backref=db.backref('tickets', lazy=True))
+
+
+# Ticket Opmerking Model
+class TicketOpmerking(db.Model):
+    __tablename__ = 'ticketopmerkingen'
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False, primary_key=True)
+    opmerking = db.Column(db.Text, nullable=False)
+    naam = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, ticket_id, opmerking, naam):
+        self.ticket_id = ticket_id
+        self.opmerking = opmerking
+        self.naam = naam
 
 
 # Contract Model
@@ -208,11 +225,6 @@ class Contract(db.Model):
         self.contract_eind_datum = contract_eind_datum
         self.contract_status = contract_status
         self.contract_termen = contract_termen
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
 
 
 @app.route('/create_contract', methods=['GET', 'POST'])
@@ -266,44 +278,22 @@ def contract_overview():
 @login_required
 def create_ticket():
     if request.method == 'POST':
-        klant_id = request.form['klant']
         ticket_naam = request.form['titel']
         ticket_beschrijving = request.form['beschrijving']
-        redirect_uri = 'customer_dashboard' if current_user.rol == 'klant' else 'dashboard'
+        machine_naam = request.form['MachineNaam']
 
         new_ticket = Ticket(
             titel=ticket_naam,
             beschrijving=ticket_beschrijving,
-            gebruiker_id=klant_id or current_user.id
+            gebruiker_id=current_user.id,
+            MachineNaam=machine_naam
         )
+
         db.session.add(new_ticket)
         db.session.commit()
         flash('Ticket succesvol aangemaakt!', 'success')
-        return redirect(url_for(redirect_uri))
+        return redirect(url_for('dashboard'))
     return render_template('create_ticket.html')
-
-
-@app.route('/ticket_overview')
-@login_required
-@role_required('medewerker')
-def ticket_overview():
-    filter_status = request.args.get('status', 'Active')  # Default to Active
-
-    # For monteurs, show all tickets if they have the role
-    if current_user.rol == 'monteur':
-        if filter_status == 'Deleted':
-            tickets = Ticket.query.filter_by(status='Deleted').all()
-        else:
-            tickets = Ticket.query.filter_by(status='Open').all()
-    else:
-        # For regular customers, only show their own tickets
-        if filter_status == 'Deleted':
-            tickets = Ticket.query.filter_by(gebruiker_id=current_user.id, status='Deleted').all()
-        else:
-            tickets = Ticket.query.filter_by(gebruiker_id=current_user.id, status='Open').all()
-
-    return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status)
-
 
 @app.route('/dashboard')
 @login_required
@@ -327,6 +317,42 @@ def customer_dashboard():
         Contract.contract_begin_datum.desc()).limit(5).all()
 
     return render_template('customer_dashboard.html', tickets=tickets, contracten=contracten)
+
+
+@app.route('/add_ticket_opmerking', methods=['POST'])
+@login_required
+def add_ticket_opmerking():
+    ticket_id = request.form.get('ticket_id')
+    opmerking = request.form.get('opmerking')
+
+    if not ticket_id or not opmerking:
+        flash('Ticket ID en opmerking zijn verplicht.', 'error')
+        return redirect(url_for('ticket_overview'))
+
+    ticket = Ticket.query.get_or_404(ticket_id)
+
+    # Check if the user has permission to add a comment to this ticket
+    if current_user.rol != 'monteur' and ticket.gebruiker_id != current_user.id:
+        flash('Je hebt geen toestemming om een opmerking toe te voegen aan dit ticket.', 'error')
+        return redirect(url_for('ticket_overview'))
+
+    new_opmerking = TicketOpmerking(
+        ticket_id=ticket_id,
+        opmerking=opmerking,
+        naam=current_user.naam
+    )
+
+    db.session.add(new_opmerking)
+    db.session.commit()
+
+    flash('Opmerking succesvol toegevoegd!', 'success')
+
+    # Redirect back to the page they came from
+    referrer = request.referrer
+    if referrer and 'ticket/' in referrer:
+        return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+    else:
+        return redirect(url_for('ticket_overview'))
 
 
 @app.route('/KlantOverzicht')
@@ -359,7 +385,7 @@ def delete_ticket(id):
     if 'customer_dashboard' in referrer:
         return redirect(url_for('customer_dashboard'))
     else:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('MedewerkerTickets'))
 
 
 # Soft Delete Contract
@@ -383,7 +409,7 @@ def delete_contract(id):
     if 'customer_dashboard' in referrer:
         return redirect(url_for('customer_dashboard'))
     else:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('contract_overview'))
 
 
 # Restore Ticket
@@ -401,7 +427,7 @@ def restore_ticket(id):
         ticket.status = "Open"  # Restore the ticket
         db.session.commit()
         flash('Ticket has been restored.', 'success')
-    return redirect(url_for('ticket_overview', status='Deleted'))
+    return redirect(url_for('MedewerkerTickets', status='Deleted'))
 
 
 # Restore Contract
@@ -432,7 +458,14 @@ def ticket_detail(ticket_id):
         flash('You do not have permission to view this ticket.', 'error')
         return redirect(url_for('dashboard'))
 
-    return render_template('ticket_detail.html', ticket=ticket)
+    # Get all opmerkingen for this ticket - Use text() to wrap the SQL query
+    sql_query = text('SELECT ticket_id, opmerking, naam FROM ticketopmerkingen WHERE ticket_id = :id')
+    opmerkingen = db.session.execute(
+        sql_query,
+        {'id': ticket_id}
+    ).fetchall()
+
+    return render_template('ticket_detail.html', ticket=ticket, opmerkingen=opmerkingen)
 
 
 # Assign ticket to monteur (new functionality)
@@ -452,6 +485,110 @@ def assign_ticket(ticket_id):
     flash(f'Ticket #{ticket_id} has been assigned to {monteur_name}.', 'success')
     return redirect(url_for('ticket_detail', ticket_id=ticket_id))
 
+
+@app.route('/ticket_overview')
+@login_required
+def ticket_overview():
+    filter_status = request.args.get('status', 'Active')  # Default to Active
+    search_query = request.args.get('search', '')
+
+    # Base query
+    query = Ticket.query
+
+    # Apply search filter if provided
+    if search_query:
+        # Join with User to search by user name
+        query = query.join(User).filter(
+            (User.naam.like(f'%{search_query}%')) |  # Search by user name
+            (Ticket.titel.like(f'%{search_query}%')) |  # Search by ticket title
+            (Ticket.MachineNaam.like(f'%{search_query}%'))  # Search by machine name
+        )
+
+    # Apply status filter
+    if current_user.rol == 'monteur':
+        if filter_status == 'Deleted':
+            query = query.filter_by(status='Deleted')
+        else:
+            query = query.filter_by(status='Open')
+    else:
+        # For regular customers, only show their own tickets
+        if filter_status == 'Deleted':
+            query = query.filter_by(gebruiker_id=current_user.id, status='Deleted')
+        else:
+            query = query.filter_by(gebruiker_id=current_user.id, status='Open')
+
+    tickets = query.all()
+
+    # Get all ticket opmerkingen
+    ticket_ids = [ticket.id for ticket in tickets]
+    opmerkingen = []
+    if ticket_ids:
+        # Use text() to wrap the SQL query
+        sql_query = text('SELECT ticket_id, opmerking, naam FROM ticketopmerkingen WHERE ticket_id IN :ids')
+        opmerkingen = db.session.execute(
+            sql_query,
+            {'ids': tuple(ticket_ids) if len(ticket_ids) > 1 else (ticket_ids[0],)}
+        ).fetchall()
+
+    # Create a dictionary to easily access opmerkingen by ticket_id
+    opmerkingen_by_ticket = {}
+    for opmerking in opmerkingen:
+        if opmerking.ticket_id not in opmerkingen_by_ticket:
+            opmerkingen_by_ticket[opmerking.ticket_id] = []
+        opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
+
+    return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status,
+                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query)
+
+
+@app.route('/MedewerkerTickets')
+@login_required
+@role_required('medewerker')
+def MedewerkerTickets():
+    filter_status = request.args.get('status', 'Active')  # Default to Active
+    search_query = request.args.get('search', '')
+
+    # Base query
+    query = Ticket.query
+
+    # Apply search filter if provided
+    if search_query:
+        # Join with User to search by user name
+        query = query.join(User).filter(
+            (User.naam.like(f'%{search_query}%')) |  # Search by user name
+            (Ticket.titel.like(f'%{search_query}%')) |  # Search by ticket title
+            (Ticket.MachineNaam.like(f'%{search_query}%'))  # Search by machine name
+        )
+
+    # Apply status filter
+    if filter_status == 'Deleted':
+        query = query.filter_by(status='Deleted')
+    else:
+        query = query.filter_by(status='Open')
+
+    # Ensure unique results
+    tickets = query.distinct().all()
+
+    # Get all ticket opmerkingen
+    ticket_ids = [ticket.id for ticket in tickets]
+    opmerkingen = []
+    if ticket_ids:
+        # Use text() to wrap the SQL query
+        sql_query = text('SELECT ticket_id, opmerking, naam FROM ticketopmerkingen WHERE ticket_id IN :ids')
+        opmerkingen = db.session.execute(
+            sql_query,
+            {'ids': tuple(ticket_ids) if len(ticket_ids) > 1 else (ticket_ids[0],)}
+        ).fetchall()
+
+    # Create a dictionary to easily access opmerkingen by ticket_id
+    opmerkingen_by_ticket = {}
+    for opmerking in opmerkingen:
+        if opmerking.ticket_id not in opmerkingen_by_ticket:
+            opmerkingen_by_ticket[opmerking.ticket_id] = []
+        opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
+
+    return render_template('MedewerkerTickets.html', tickets=tickets, filter_status=filter_status,
+                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query)
 
 # logout functie
 @app.route('/logout')

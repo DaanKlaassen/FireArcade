@@ -27,22 +27,6 @@
                     <h2>Welcome back, {{ current_user.naam }}!</h2>
                 </div>
                 
-                <!-- Stats cards -->
-                <div class="stats-grid stats-grid-three">
-                    <div class="card stat-card">
-                        <div class="stat-label">My Tickets</div>
-                        <div class="stat-value">{{ tickets|selectattr('status', 'equalto', 'Open')|list|length }}</div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-label">Machines Owned</div>
-                        <div class="stat-value">5</div>
-                    </div>
-                    <div class="card stat-card">
-                        <div class="stat-label">Pending Orders</div>
-                        <div class="stat-value">1</div>
-                    </div>
-                </div>
-                
                 <!-- Recent Activity -->
                 <div class="card">
                     <h2>My Recent Tickets</h2>
@@ -86,20 +70,6 @@
                         <button class="action-btn" data-bs-toggle="modal" data-bs-target="#createTicketModal">
                             New Ticket
                         </button>
-                        <button class="action-btn">
-                            Schedule Maintenance
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Upcoming Maintenance -->
-                <div class="card">
-                    <h2>Upcoming Maintenance</h2>
-                    <div class="maintenance-list">
-                        <div class="maintenance-item">
-                            <p class="maintenance-title">Street Fighter X - Next Week</p>
-                            <p class="maintenance-desc">Pinball Machine - in 3 days</p>
-                        </div>
                     </div>
                 </div>
             </div>

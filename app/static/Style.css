@@ -1,6 +1,5 @@
 a {
-    text-decoration: none;
-    text-underline: none !important;
+    text-decoration: none !important;
 }
 
 font-face {
@@ -269,6 +268,8 @@ body {
     font-weight: 700;
     font-size: 1.25rem;
     letter-spacing: 0.5px;
+    color : white !important;
+    text-underline: none !important;
 }
 
 .nav-buttons {
