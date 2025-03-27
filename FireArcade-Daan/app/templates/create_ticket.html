@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maak een Ticket</title>
+</head>
+<body>
+    <h1>Maak een nieuw ticket aan</h1>
+    <form method="POST">
+        <label for="naam">Naam:</label>
+        <input type="text" id="naam" name="naam" required><br>
+
+        <label for="emailadres">Emailadres:</label>
+        <input type="email" id="emailadres" name="emailadres" required><br>
+
+        <label for="adres">Adres:</label>
+        <input type="text" id="adres" name="adres" required><br>
+
+        <label for="telefoonnummer">Telefoonnummer:</label>
+        <input type="text" id="telefoonnummer" name="telefoonnummer" required><br>
+
+        <label for="spelkast">Spelkast:</label>
+        <input type="text" id="spelkast" name="spelkast" required><br>
+
+        <label for="opmerkingen">Opmerkingen:</label>
+        <textarea id="opmerkingen" name="opmerkingen"></textarea><br>
+
+        <button type="submit">Ticket Aanmaken</button>
+    </form>
+    <a href="{{ url_for('ticket_overview') }}">Bekijk mijn tickets</a>
+</body>
+</html>

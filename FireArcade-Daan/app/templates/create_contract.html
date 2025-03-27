@@ -1,0 +1,22 @@
+<form method="POST" action="{{ url_for('create_contract') }}">
+    <div class="form-group">
+        <label for="contract_begin_datum">Begin Datum</label>
+        <input type="date" name="contract_begin_datum" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="contract_eind_datum">Eind Datum</label>
+        <input type="date" name="contract_eind_datum" class="form-control" required>
+    </div>
+    <div class="form-group">
+        <label for="contract_status">Status</label>
+        <select name="contract_status" class="form-control" required>
+            <option value="actief">Actief</option>
+            <option value="inactief">Inactief</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="contract_termen">Termen</label>
+        <textarea name="contract_termen" class="form-control"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Contract aanmaken</button>
+</form>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>De Samenkomst - Registratie</title>
+    <link href="/static/Style.css" rel="stylesheet">
+</head>
+<body>
+<div class="min-h-screen flex">
+    <!-- Left side -->
+    <div class="hidden lg:flex lg:w-2/5 bg-brown p-12">
+        <div class="text-white">
+            <h1 class="text-3xl font-bold mb-2">De Samenkomst</h1>
+            <p class="text-sm opacity-80">Website voor de Samenkomst.</p>
+        </div>
+    </div>
+
+    <!-- Right side -->
+    <div class="flex-1 flex items-center justify-center p-8">
+        <div class="w-full max-w-md">
+            <h2 class="text-2xl font-semibold mb-8">Registreren</h2>
+
+            <form method="POST" action="/registreren" class="space-y-6">
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                {% for message in messages %}
+                <div class="bg-red-100 text-red-700 p-3 rounded mb-4">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                {% endwith %}
+
+                <div>
+                    <label for="name">Naam</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
+                <div>
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div>
+                    <label for="telefoonnummer">Telefoonnummer</label>
+                    <input type="text" id="telefoonnummer" name="telefoonnummer" required>
+                </div>
+                <div>
+                    <label for="password">Wachtwoord</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit">Registreren</button>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>
