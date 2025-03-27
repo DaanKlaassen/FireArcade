@@ -113,10 +113,15 @@ def reset_password():
 @app.route('/registreren', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        naam = request.form['name']  # Haal de naam op uit het formulier
+        naam = request.form['name']
         emailadres = request.form['email']
         password = request.form['password']
         telefoonnummer = request.form['telefoonnummer']
+
+        # Controleer of het wachtwoord lang genoeg is
+        if len(password) < 10:
+            flash('Wachtwoord moet minimaal 10 tekens lang zijn!', 'danger')
+            return render_template('KlantenRegistreren.html', name=naam, email=emailadres, telefoonnummer=telefoonnummer)
 
         # Controleer of de gebruiker al bestaat
         user = User.query.filter_by(emailadres=emailadres).first()
@@ -127,9 +132,14 @@ def register():
         # Wachtwoord hashen voor veilige opslag
         hashed_password = generate_password_hash(password)
 
-        # Nieuwe gebruiker toevoegen aan de database
-        new_user = User(naam=naam, emailadres=emailadres, wachtwoord_hash=hashed_password, rol='user',
-                        telefoonnummer=telefoonnummer)
+        # Nieuwe gebruiker toevoegen met standaardrol 'klant'
+        new_user = User(
+            naam=naam,
+            emailadres=emailadres,
+            wachtwoord_hash=hashed_password,
+            rol='klant',  # Standaardrol instellen
+            telefoonnummer=telefoonnummer
+        )
         db.session.add(new_user)
         db.session.commit()
 
