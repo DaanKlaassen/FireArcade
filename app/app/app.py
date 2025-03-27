@@ -1,9 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text
 from dotenv import load_dotenv
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -49,8 +51,22 @@ class Ticket(db.Model):
     status = db.Column(db.String(50), default='Open')  # Active or Deleted
     toegewezen = db.Column(db.String(255), default='Nog niet toegewezen')
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+    MachineNaam = db.Column(db.String(255), nullable=True)
 
     gebruiker = db.relationship('User', backref=db.backref('tickets', lazy=True))
+
+# Ticket Opmerking Model
+class TicketOpmerking(db.Model):
+    __tablename__ = 'ticketopmerkingen'
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), primary_key=True)
+    opmerking = db.Column(db.Text, nullable=False)
+    naam = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, ticket_id, opmerking, naam):
+        self.ticket_id = ticket_id
+        self.opmerking = opmerking
+        self.naam = naam
 
 # Contract Model
 class Contract(db.Model):
@@ -123,11 +139,13 @@ def create_ticket():
     if request.method == 'POST':
         ticket_naam = request.form['titel']
         ticket_beschrijving = request.form['beschrijving']
+        machine_naam = request.form['MachineNaam']
 
         new_ticket = Ticket(
             titel=ticket_naam,
             beschrijving=ticket_beschrijving,
-            gebruiker_id=current_user.id
+            gebruiker_id=current_user.id,
+            MachineNaam=machine_naam
         )
         db.session.add(new_ticket)
         db.session.commit()
@@ -135,25 +153,93 @@ def create_ticket():
         return redirect(url_for('dashboard'))
     return render_template('create_ticket.html')
 
+@app.route('/add_ticket_opmerking', methods=['POST'])
+@login_required
+def add_ticket_opmerking():
+    ticket_id = request.form.get('ticket_id')
+    opmerking = request.form.get('opmerking')
+    
+    if not ticket_id or not opmerking:
+        flash('Ticket ID en opmerking zijn verplicht.', 'error')
+        return redirect(url_for('ticket_overview'))
+    
+    ticket = Ticket.query.get_or_404(ticket_id)
+    
+    # Check if the user has permission to add a comment to this ticket
+    if current_user.rol != 'monteur' and ticket.gebruiker_id != current_user.id:
+        flash('Je hebt geen toestemming om een opmerking toe te voegen aan dit ticket.', 'error')
+        return redirect(url_for('ticket_overview'))
+    
+    new_opmerking = TicketOpmerking(
+        ticket_id=ticket_id,
+        opmerking=opmerking,
+        naam=current_user.naam
+    )
+    
+    db.session.add(new_opmerking)
+    db.session.commit()
+    
+    flash('Opmerking succesvol toegevoegd!', 'success')
+    
+    # Redirect back to the page they came from
+    referrer = request.referrer
+    if referrer and 'ticket/' in referrer:
+        return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+    else:
+        return redirect(url_for('ticket_overview'))
+
 @app.route('/ticket_overview')
 @login_required
 def ticket_overview():
     filter_status = request.args.get('status', 'Active')  # Default to Active
+    search_query = request.args.get('search', '')
     
-    # For monteurs, show all tickets if they have the role
+    # Base query
+    query = Ticket.query
+    
+    # Apply search filter if provided
+    if search_query:
+        # Join with User to search by user name
+        query = query.join(User).filter(
+            (User.naam.like(f'%{search_query}%')) |  # Search by user name
+            (Ticket.titel.like(f'%{search_query}%')) |  # Search by ticket title
+            (Ticket.MachineNaam.like(f'%{search_query}%'))  # Search by machine name
+        )
+    
+    # Apply status filter
     if current_user.rol == 'monteur':
         if filter_status == 'Deleted':
-            tickets = Ticket.query.filter_by(status='Deleted').all()
+            query = query.filter_by(status='Deleted')
         else:
-            tickets = Ticket.query.filter_by(status='Open').all()
+            query = query.filter_by(status='Open')
     else:
         # For regular customers, only show their own tickets
         if filter_status == 'Deleted':
-            tickets = Ticket.query.filter_by(gebruiker_id=current_user.id, status='Deleted').all()
+            query = query.filter_by(gebruiker_id=current_user.id, status='Deleted')
         else:
-            tickets = Ticket.query.filter_by(gebruiker_id=current_user.id, status='Open').all()
+            query = query.filter_by(gebruiker_id=current_user.id, status='Open')
+    
+    tickets = query.all()
+    
+    # Get all ticket opmerkingen
+    ticket_ids = [ticket.id for ticket in tickets]
+    opmerkingen = []
+    if ticket_ids:
+        # Use text() to wrap the SQL query
+        sql_query = text('SELECT ticket_id, opmerking, naam FROM ticketopmerkingen WHERE ticket_id IN :ids')
+        opmerkingen = db.session.execute(
+            sql_query,
+            {'ids': tuple(ticket_ids) if len(ticket_ids) > 1 else (ticket_ids[0],)}
+        ).fetchall()
+    
+    # Create a dictionary to easily access opmerkingen by ticket_id
+    opmerkingen_by_ticket = {}
+    for opmerking in opmerkingen:
+        if opmerking.ticket_id not in opmerkingen_by_ticket:
+            opmerkingen_by_ticket[opmerking.ticket_id] = []
+        opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
             
-    return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status)
+    return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status, opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query)
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -287,8 +373,15 @@ def ticket_detail(ticket_id):
     if current_user.rol != 'monteur' and ticket.gebruiker_id != current_user.id:
         flash('You do not have permission to view this ticket.', 'error')
         return redirect(url_for('dashboard'))
+    
+    # Get all opmerkingen for this ticket - Use text() to wrap the SQL query
+    sql_query = text('SELECT ticket_id, opmerking, naam FROM ticketopmerkingen WHERE ticket_id = :id')
+    opmerkingen = db.session.execute(
+        sql_query,
+        {'id': ticket_id}
+    ).fetchall()
         
-    return render_template('ticket_detail.html', ticket=ticket)
+    return render_template('ticket_detail.html', ticket=ticket, opmerkingen=opmerkingen)
 
 # Assign ticket to monteur (new functionality)
 @app.route('/assign_ticket/<int:ticket_id>', methods=['POST'])
@@ -344,3 +437,5 @@ def register():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+    
