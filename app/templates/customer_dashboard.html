@@ -13,9 +13,7 @@
         <div class="container header-container">
             <div class="logo">FIREARCADE</div>
             <div class="nav-buttons">
-                <button class="nav-btn active">Customer Portal</button>
-                <a href="{{ url_for('dashboard') }}" class="nav-btn">Monteur Portal</a>
-                <button class="nav-btn">Admin</button>
+                <a style="text-underline: none !important;" href="/logout"><button class="action-btn">Uitloggen</button></a>
             </div>
         </div>
     </header>
@@ -59,9 +57,6 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <div class="view-all-btn-container">
-                        <a href="{{ url_for('ticket_overview') }}" class="view-all-btn">View All My Tickets</a>
-                    </div>
                 </div>
                 
                 <!-- Contracts Section -->
@@ -71,16 +66,13 @@
                         {% for contract in contracten %}
                         <div class="contract-item">
                             <div class="contract-dates">
-                                <span class="contract-date">{{ contract.contract_begin_datum.strftime('%Y-%m-%d') }}</span> - 
+                                <span class="contract-date">{{ contract.contract_begin_datum.strftime('%Y-%m-%d') }}</span> -
                                 <span class="contract-date">{{ contract.contract_eind_datum.strftime('%Y-%m-%d') }}</span>
                             </div>
                             <div class="contract-status">{{ contract.contract_status }}</div>
                             <div class="contract-terms">{{ contract.contract_termen[:50] }}...</div>
                         </div>
                         {% endfor %}
-                    </div>
-                    <div class="view-all-btn-container">
-                        <a href="{{ url_for('contract_overview') }}" class="view-all-btn">View All My Contracts</a>
                     </div>
                 </div>
             </div>
@@ -93,9 +85,6 @@
                     <div class="action-buttons">
                         <button class="action-btn" data-bs-toggle="modal" data-bs-target="#createTicketModal">
                             New Ticket
-                        </button>
-                        <button class="action-btn" data-bs-toggle="modal" data-bs-target="#createContractModal">
-                            Create Contract
                         </button>
                         <button class="action-btn">
                             Schedule Maintenance
@@ -139,42 +128,6 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
                         <button type="submit" class="btn btn-primary">Aanmaken</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Contract Creation Modal -->
-    <div class="modal fade" id="createContractModal" tabindex="-1" aria-labelledby="createContractModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createContractModalLabel">Nieuw Contract Aanmaken</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ url_for('create_contract') }}" method="POST">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="contract_begin_datum" class="form-label">Begin Datum</label>
-                            <input type="date" class="form-control" id="contract_begin_datum" name="contract_begin_datum" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="contract_eind_datum" class="form-label">Eind Datum</label>
-                            <input type="date" class="form-control" id="contract_eind_datum" name="contract_eind_datum" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="contract_status" class="form-label">Status</label>
-                            <input type="text" class="form-control" id="contract_status" name="contract_status" value="Active" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="contract_termen" class="form-label">Contract Termen</label>
-                            <textarea class="form-control" id="contract_termen" name="contract_termen" rows="4" required></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
-                        <button type="submit" class="btn btn-success">Aanmaken</button>
                     </div>
                 </form>
             </div>

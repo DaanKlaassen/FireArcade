@@ -7,9 +7,9 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="/static/Style.css" rel="stylesheet">
 </head>
-<body class="font-sans">
+<body>
 <div class="min-h-screen flex">
-    <div class="hidden lg:flex lg:w-2/5 bg-purple-primary p-12 items-center">
+    <div class="hidden lg:flex lg:w-2/5 bg-blue-primary p-12 items-center">
         <div class="text-white max-w-xs">
             <h1 class="text-3xl font-bold mb-2">Welkom Terug</h1>
             <p class="text-sm opacity-80">Log in om verder te gaan.</p>
@@ -35,20 +35,20 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="email">Emailadres</label>
                     <input type="text" name="email" id="email" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-primary">
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1" for="password">Wachtwoord</label>
                     <input type="password" name="password" id="password" required
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-primary">
                     <div class="flex justify-between items-center mt-1">
-                        <button type="button" id="show-password" class="text-sm text-purple-primary hover:underline">
+                        <button type="button" id="show-password" class="text-sm text-blue-primary hover:underline">
                             Toon wachtwoord
                         </button>
                         {% if rol != 'medewerker' %}
                         <button type="button" id="forgot-password"
-                                class="text-sm text-purple-primary hover:underline">
+                                class="text-sm text-blue-primary hover:underline">
                             Wachtwoord vergeten?
                         </button>
                         {% endif %}
@@ -56,12 +56,12 @@
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-purple-primary hover:bg-purple-dark text-white py-2 px-4 rounded-md transition-colors">
+                        class="w-full bg-blue-primary hover:bg-blue-dark text-white py-2 px-4 rounded-md transition-colors">
                     Log in
                 </button>
 
                 <div class="text-center text-sm text-gray-600">
-                    Nog geen account? <a href="registreren" class="text-purple-primary hover:underline">Registreer</a>
+                    Nog geen account? <a href="registreren" class="text-blue-primary hover:underline">Registreer</a>
                 </div>
 
                 <!-- button naar medewerker login pagina -->
@@ -80,11 +80,11 @@
         <h3 class="text-lg font-semibold mb-4">Wachtwoord wijzigen</h3>
         <p class="text-sm text-gray-600 mb-4">Voer uw e-mailadres en telefoonnummer in om uw wachtwoord te wijzigen.</p>
         <input type="email" id="reset-email" placeholder="Uw e-mailadres"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-2">
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-primary mb-2">
         <input type="text" id="reset-phone" placeholder="Uw telefoonnummer"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-4">
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-primary mb-4">
         <input type="password" id="new-password" placeholder="Nieuw wachtwoord"
-               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-purple-primary mb-4">
+               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-primary mb-4">
 
         <!-- Error message -->
         <div id="error-message" class="hidden text-red-600 text-sm mb-4"></div>
@@ -96,7 +96,7 @@
 
         <div class="flex justify-end space-x-2">
             <button id="close-modal" class="px-4 py-2 bg-gray-300 rounded-md">Annuleren</button>
-            <button id="change-password" class="px-4 py-2 bg-purple-primary text-white rounded-md">Wijzigen</button>
+            <button id="change-password" class="px-4 py-2 bg-blue-primary text-white rounded-md">Wijzigen</button>
         </div>
     </div>
 </div>

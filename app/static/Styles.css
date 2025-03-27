@@ -104,7 +104,7 @@ body {
     .dashboard-grid {
         grid-template-columns: 1fr;
     }
-    
+
     .page-header {
         flex-direction: column;
         align-items: flex-start;
@@ -124,6 +124,7 @@ body {
     border-radius: 8px;
     box-shadow: var(--shadow);
     padding: 1.5rem;
+
 }
 
 .card h2 {
@@ -233,6 +234,8 @@ body {
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 1rem;
+    overflow-y: scroll;
+    max-height: 300px;
 }
 
 .contract-item {
@@ -302,6 +305,7 @@ body {
     font-size: 0.875rem;
     font-weight: 500;
     transition: background-color 0.2s;
+    outline: #000000 solid 1px;
 }
 
 .action-btn:hover {
@@ -695,21 +699,22 @@ body {
     .card {
         padding: 1rem;
     }
-    
+
     .stat-value {
         font-size: 1.5rem;
     }
-    
+
     .action-btn {
         padding: 0.625rem 0.875rem;
+        outline: #000000 solid 1px;
     }
-    
+
     .header-container {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.75rem;
     }
-    
+
     .nav-buttons {
         width: 100%;
         justify-content: space-between;

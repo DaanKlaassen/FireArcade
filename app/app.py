@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from flask_sqlalchemy import SQLAlchemy
 from dotenv import load_dotenv
 import os
 from werkzeug.security import check_password_hash, generate_password_hash
+from functools import wraps
 
 # Load environment variables
 load_dotenv()
@@ -34,6 +35,7 @@ class User(UserMixin, db.Model):
     wachtwoord_hash = db.Column(db.String(128), nullable=False)
     rol = db.Column(db.String(50), nullable=False)
     telefoonnummer = db.Column(db.String(20), nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
 
     def __init__(self, naam, emailadres, wachtwoord_hash, rol, telefoonnummer):
         self.naam = naam
@@ -41,11 +43,28 @@ class User(UserMixin, db.Model):
         self.wachtwoord_hash = wachtwoord_hash
         self.rol = rol
         self.telefoonnummer = telefoonnummer
+        self.created_at = db.func.current_timestamp()
 
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+
+# Decorator om toegang te beperken op basis van rol
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:  # Check of de gebruiker is ingelogd
+                return redirect(url_for('login'))  # Stuur naar de loginpagina als niet ingelogd
+            if current_user.rol != required_role:  # Check of de gebruiker de juiste rol heeft
+                abort(403)  # Forbidden als hij de verkeerde rol heeft
+            return f(*args, **kwargs)
+
+        return decorated_function
+
+    return decorator
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -117,18 +136,25 @@ def register():
         emailadres = request.form['email']
         password = request.form['password']
         telefoonnummer = request.form['telefoonnummer']
+        redirect_uri = 'klanten_overview' if current_user else 'login'
 
         # Controleer of het wachtwoord lang genoeg is
         if len(password) < 10:
             flash('Wachtwoord moet minimaal 10 tekens lang zijn!', 'danger')
-            return render_template('KlantenRegistreren.html', name=naam, email=emailadres,
-                                   telefoonnummer=telefoonnummer)
+            if current_user:
+                return redirect(url_for(redirect_uri))
+            else:
+                return render_template('KlantenRegistreren.html', name=naam, email=emailadres,
+                                       telefoonnummer=telefoonnummer)
 
         # Controleer of de gebruiker al bestaat
         user = User.query.filter_by(emailadres=emailadres).first()
         if user:
             flash('Er is al een account met dit e-mailadres!', 'danger')
-            return render_template('KlantenRegistreren.html')
+            if current_user:
+                return redirect(url_for(redirect_uri))
+            else:
+                return render_template('KlantenRegistreren.html')
 
         # Wachtwoord hashen voor veilige opslag
         hashed_password = generate_password_hash(password)
@@ -145,9 +171,10 @@ def register():
         db.session.commit()
 
         flash('Je account is succesvol aangemaakt! Je kunt nu inloggen.', 'success')
-        return redirect(url_for('login'))
-
-    return render_template('KlantenRegistreren.html')
+    if current_user:
+        return redirect(url_for(redirect_uri))
+    else:
+        return render_template('KlantenRegistreren.html')
 
 
 # Ticket Model
@@ -190,15 +217,16 @@ def load_user(user_id):
 
 @app.route('/create_contract', methods=['GET', 'POST'])
 @login_required
+@role_required('medewerker')
 def create_contract():
     if request.method == 'POST':
-        gebruiker_id = current_user.id  # We nemen de huidige gebruiker aan
+        gebruiker_id = request.form['gebruiker']
         contract_begin_datum = request.form['contract_begin_datum']
         contract_eind_datum = request.form['contract_eind_datum']
         contract_status = request.form['contract_status']
         contract_termen = request.form['contract_termen']
 
-        new_contract = Contract(gebruiker_id=gebruiker_id,
+        new_contract = Contract(gebruiker_id=gebruiker_id or current_user.id,
                                 contract_begin_datum=contract_begin_datum,
                                 contract_eind_datum=contract_eind_datum,
                                 contract_status=contract_status,
@@ -214,6 +242,7 @@ def create_contract():
 
 @app.route('/contract_overview')
 @login_required
+@role_required('medewerker')
 def contract_overview():
     filter_status = request.args.get('status', 'Active')  # Default to Active
 
@@ -237,23 +266,26 @@ def contract_overview():
 @login_required
 def create_ticket():
     if request.method == 'POST':
+        klant_id = request.form['klant']
         ticket_naam = request.form['titel']
         ticket_beschrijving = request.form['beschrijving']
+        redirect_uri = 'customer_dashboard' if current_user.rol == 'klant' else 'dashboard'
 
         new_ticket = Ticket(
             titel=ticket_naam,
             beschrijving=ticket_beschrijving,
-            gebruiker_id=current_user.id
+            gebruiker_id=klant_id or current_user.id
         )
         db.session.add(new_ticket)
         db.session.commit()
         flash('Ticket succesvol aangemaakt!', 'success')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for(redirect_uri))
     return render_template('create_ticket.html')
 
 
 @app.route('/ticket_overview')
 @login_required
+@role_required('medewerker')
 def ticket_overview():
     filter_status = request.args.get('status', 'Active')  # Default to Active
 
@@ -275,13 +307,14 @@ def ticket_overview():
 
 @app.route('/dashboard')
 @login_required
+@role_required('medewerker')
 def dashboard():
     # This is now the monteur dashboard (purple)
     # Get all tickets and contracts for monteurs
     tickets = Ticket.query.order_by(Ticket.created_at.desc()).limit(5).all()
     contracten = Contract.query.order_by(Contract.contract_begin_datum.desc()).limit(5).all()
-
-    return render_template('dashboard.html', tickets=tickets, contracten=contracten)
+    customers = User.query.order_by(User.naam).filter(User.rol == "klant").all()
+    return render_template('dashboard.html', klanten=customers, tickets=tickets, contracten=contracten)
 
 
 @app.route('/customer_dashboard')
@@ -294,6 +327,15 @@ def customer_dashboard():
         Contract.contract_begin_datum.desc()).limit(5).all()
 
     return render_template('customer_dashboard.html', tickets=tickets, contracten=contracten)
+
+
+@app.route('/KlantOverzicht')
+@login_required
+@role_required('medewerker')
+def klanten_overview():
+    gebruikers = User.query.all()
+
+    return render_template('KlantOverzicht.html', gebruikers=gebruikers)
 
 
 # Soft Delete Ticket
