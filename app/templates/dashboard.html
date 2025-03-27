@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monteur Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-container">
+            <div class="logo">FIREARCADE</div>
+            <div class="nav-buttons">
+                <a href="{{ url_for('customer_dashboard') }}" class="nav-btn">Customer Portal</a>
+                <button class="nav-btn active">Monteur Portal</button>
+                <button class="nav-btn">Admin</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="dashboard-grid">
+            <!-- Left column -->
+            <div class="dashboard-column main-column">
+                <!-- Welcome card -->
+                <div class="card welcome-card">
+                    <h2>Welcome back, {{ current_user.naam }}!</h2>
+                </div>
+                
+                <!-- Stats cards -->
+                <div class="stats-grid stats-grid-three">
+                    <div class="card stat-card">
+                        <div class="stat-label">Active Tickets</div>
+                        <div class="stat-value">{{ tickets|selectattr('status', 'equalto', 'Open')|list|length }}</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-label">Machines Owned</div>
+                        <div class="stat-value">5</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-label">Pending Orders</div>
+                        <div class="stat-value">1</div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="card">
+                    <h2>Recent Activity</h2>
+                    <div class="activity-list">
+                        {% for ticket in tickets %}
+                        <div class="activity-item">
+                            <div class="activity-dot"></div>
+                            <div class="activity-content">
+                                <p class="activity-title">Ticket #{{ ticket.id }} updated: {{ ticket.toegewezen }}</p>
+                                <p class="activity-desc">{{ ticket.titel }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="view-all-btn-container">
+                        <a href="{{ url_for('ticket_overview') }}" class="view-all-btn">View All Tickets</a>
+                    </div>
+                </div>
+                
+                <!-- Contracts Section -->
+                <div class="card">
+                    <h2>All Contracts</h2>
+                    <div class="contracts-list">
+                        {% for contract in contracten %}
+                        <div class="contract-item">
+                            <div class="contract-dates">
+                                <span class="contract-date">{{ contract.contract_begin_datum.strftime('%Y-%m-%d') }}</span> - 
+                                <span class="contract-date">{{ contract.contract_eind_datum.strftime('%Y-%m-%d') }}</span>
+                            </div>
+                            <div class="contract-status">{{ contract.contract_status }}</div>
+                            <div class="contract-terms">{{ contract.contract_termen[:50] }}...</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="view-all-btn-container">
+                        <a href="{{ url_for('contract_overview') }}" class="view-all-btn">View All Contracts</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right column -->
+            <div class="dashboard-column sidebar-column">
+                <!-- Quick Actions -->
+                <div class="card">
+                    <h2>Quick Actions</h2>
+                    <div class="action-buttons">
+                        <button class="action-btn" data-bs-toggle="modal" data-bs-target="#createTicketModal">
+                            New Ticket
+                        </button>
+                        <button class="action-btn" data-bs-toggle="modal" data-bs-target="#createContractModal">
+                            Create Contract
+                        </button>
+                        <button class="action-btn">
+                            Schedule Maintenance
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upcoming Maintenance -->
+                <div class="card">
+                    <h2>Upcoming Maintenance</h2>
+                    <div class="maintenance-list">
+                        <div class="maintenance-item">
+                            <p class="maintenance-title">Street Fighter X - Next Week</p>
+                            <p class="maintenance-desc">Pinball Machine - in 3 days</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Ticket Creation Modal -->
+    <div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createTicketModalLabel">Nieuw Ticket Aanmaken</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('create_ticket') }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="titel" class="form-label">Titel</label>
+                            <input type="text" class="form-control" id="titel" name="titel" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="beschrijving" class="form-label">Beschrijving</label>
+                            <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                        <button type="submit" class="btn btn-primary">Aanmaken</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contract Creation Modal -->
+    <div class="modal fade" id="createContractModal" tabindex="-1" aria-labelledby="createContractModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="createContractModalLabel">Nieuw Contract Aanmaken</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ url_for('create_contract') }}" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="contract_begin_datum" class="form-label">Begin Datum</label>
+                            <input type="date" class="form-control" id="contract_begin_datum" name="contract_begin_datum" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contract_eind_datum" class="form-label">Eind Datum</label>
+                            <input type="date" class="form-control" id="contract_eind_datum" name="contract_eind_datum" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contract_status" class="form-label">Status</label>
+                            <input type="text" class="form-control" id="contract_status" name="contract_status" value="Active" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contract_termen" class="form-label">Contract Termen</label>
+                            <textarea class="form-control" id="contract_termen" name="contract_termen" rows="4" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                        <button type="submit" class="btn btn-success">Aanmaken</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
