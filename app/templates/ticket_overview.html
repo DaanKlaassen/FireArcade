@@ -114,11 +114,11 @@
                                     <a href="{{ url_for('ticket_detail', ticket_id=ticket.id) }}" class="btn-icon view-btn" title="View Details">
                                         <i class="bi bi-eye"></i>
                                     </a>
-                                    
+
                                     <button class="btn-icon view-btn" title="Add Comment" data-bs-toggle="modal" data-bs-target="#addOpmerkingModal" data-ticket-id="{{ ticket.id }}" data-ticket-title="{{ ticket.titel }}">
                                         <i class="bi bi-chat-dots"></i>
                                     </button>
-                                    
+
                                     {% if filter_status == 'Active' %}
                                     <form action="{{ url_for('delete_ticket', id=ticket.id) }}" method="POST" class="d-inline">
                                         <button type="submit" class="btn-icon delete-btn" title="Delete Ticket" onclick="return confirm('Are you sure you want to delete this ticket?')">
@@ -189,8 +189,13 @@
                             <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4" required></textarea>
                         </div>
                         <div class="mb-3">
-                            <label for="MachineNaam" class="form-label">Machine Naam</label>
-                            <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
+                            <label for="machine_id" class="form-label">Machine</label>
+                            <select class="form-select" id="machine_id" name="machine_id" required>
+                                <option value="" selected disabled>Select a machine</option>
+                                {% for machine in machines %}
+                                <option value="{{ machine.id }}">{{ machine.game_naam }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -241,10 +246,10 @@
                     const button = event.relatedTarget;
                     const ticketId = button.getAttribute('data-ticket-id');
                     const ticketTitle = button.getAttribute('data-ticket-title');
-                    
+
                     const modalTicketId = document.getElementById('modal-ticket-id');
                     const modalTicketTitle = document.getElementById('modal-ticket-title');
-                    
+
                     modalTicketId.value = ticketId;
                     modalTicketTitle.textContent = `#${ticketId} - ${ticketTitle}`;
                 });
@@ -256,7 +261,7 @@
                 toggle.addEventListener('click', function() {
                     const ticketId = this.getAttribute('data-ticket-id');
                     const commentsSection = document.getElementById(`comments-${ticketId}`);
-                    
+
                     if (commentsSection.classList.contains('show')) {
                         commentsSection.classList.remove('show');
                         this.innerHTML = `<i class="bi bi-chevron-down"></i> Show Comments (${this.getAttribute('data-count')})`;
@@ -265,7 +270,7 @@
                         this.innerHTML = `<i class="bi bi-chevron-up"></i> Hide Comments (${this.getAttribute('data-count')})`;
                     }
                 });
-                
+
                 // Set the comment count as a data attribute
                 const ticketId = toggle.getAttribute('data-ticket-id');
                 const commentsSection = document.getElementById(`comments-${ticketId}`);
