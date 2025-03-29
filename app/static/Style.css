@@ -251,6 +251,18 @@ body {
     padding: 0 1rem;
 }
 
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: color 0.2s;
+
+}
+
 /* Header */
 .header {
     background-color: var(--primary-color);

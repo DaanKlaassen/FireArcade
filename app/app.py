@@ -6,6 +6,7 @@ import os
 from werkzeug.security import check_password_hash, generate_password_hash
 from functools import wraps
 from sqlalchemy.sql import text
+from datetime import datetime  # Add missing import for datetime
 
 # Load environment variables
 load_dotenv()
@@ -45,6 +46,16 @@ class User(UserMixin, db.Model):
         self.rol = rol
         self.telefoonnummer = telefoonnummer
         self.created_at = db.func.current_timestamp()
+
+
+# Machine Model
+class Machine(db.Model):
+    __tablename__ = 'machine'
+    id = db.Column(db.Integer, primary_key=True)
+    game_naam = db.Column(db.String(255), nullable=False)
+    publicatiedatum = db.Column(db.Date, nullable=True)
+    fabrikant = db.Column(db.String(255), nullable=True)
+    voorraad = db.Column(db.Integer, nullable=True)
 
 
 @login_manager.user_loader
@@ -232,17 +243,23 @@ class Contract(db.Model):
 @role_required('medewerker')
 def create_contract():
     if request.method == 'POST':
-        gebruiker_id = request.form['gebruiker']
+        gebruiker_id = request.form.get('gebruiker')
+        if not gebruiker_id:
+            flash('Klant is verplicht.', 'error')
+            return redirect(url_for('create_contract'))
+
         contract_begin_datum = request.form['contract_begin_datum']
         contract_eind_datum = request.form['contract_eind_datum']
         contract_status = request.form['contract_status']
         contract_termen = request.form['contract_termen']
 
-        new_contract = Contract(gebruiker_id=gebruiker_id or current_user.id,
-                                contract_begin_datum=contract_begin_datum,
-                                contract_eind_datum=contract_eind_datum,
-                                contract_status=contract_status,
-                                contract_termen=contract_termen)
+        new_contract = Contract(
+            gebruiker_id=gebruiker_id,
+            contract_begin_datum=contract_begin_datum,
+            contract_eind_datum=contract_eind_datum,
+            contract_status=contract_status,
+            contract_termen=contract_termen
+        )
         db.session.add(new_contract)
         db.session.commit()
 
@@ -252,31 +269,98 @@ def create_contract():
     return render_template('create_contract.html')
 
 
-@app.route('/contract_overview')
+@app.route('/contract_overview', methods=['GET', 'POST'])
 @login_required
 @role_required('medewerker')
 def contract_overview():
+    search_query = request.args.get('search', '')
+
+    if request.method == 'POST':
+        # Handle contract creation
+        gebruiker_id = request.form.get('gebruiker')
+        if not gebruiker_id:
+            flash('Klant is verplicht.', 'error')
+            return redirect(url_for('contract_overview'))
+
+        contract_begin_datum = request.form['contract_begin_datum']
+        contract_eind_datum = request.form['contract_eind_datum']
+        contract_status = request.form['contract_status']
+        contract_termen = request.form['contract_termen']
+
+        new_contract = Contract(
+            gebruiker_id=gebruiker_id,
+            contract_begin_datum=contract_begin_datum,
+            contract_eind_datum=contract_eind_datum,
+            contract_status=contract_status,
+            contract_termen=contract_termen
+        )
+        db.session.add(new_contract)
+        db.session.commit()
+
+        flash('Het contract is succesvol aangemaakt!', 'success')
+        return redirect(url_for('contract_overview'))
+
+    # GET request handling
     filter_status = request.args.get('status', 'Active')  # Default to Active
 
     print(f"Filter Status: {filter_status}")  # Debug print
 
-    if current_user.rol == 'monteur':
-        if filter_status == 'Deleted':
-            contracten = Contract.query.filter_by(contract_status='Deleted').all()
+    if not hasattr(current_user, 'id') or current_user.id is None:
+        print("Error: current_user has no id")
+        abort(400, description="Invalid user session")
+
+    try:
+        # Start with a base query that joins Contract and User
+        base_query = db.session.query(Contract, User.naam).join(
+            User, Contract.gebruiker_id == User.id
+        )
+
+        # Apply search filter if provided
+        if search_query:
+            base_query = base_query.filter(
+                User.naam.like(f'%{search_query}%')  # Search by user name
+            )
+
+        # Apply status and user role filters
+        if current_user.rol == 'medewerker':
+            if filter_status == 'Deleted':
+                contracten = base_query.filter(Contract.contract_status == 'Deleted').all()
+            else:
+                contracten = base_query.filter(Contract.contract_status == 'Active').all()
         else:
-            contracten = Contract.query.filter_by(contract_status='Active').all()
-    else:
-        if filter_status == 'Deleted':
-            contracten = Contract.query.filter_by(gebruiker_id=current_user.id, contract_status='Deleted').all()
-        else:
-            contracten = Contract.query.filter_by(gebruiker_id=current_user.id, contract_status='Active').all()
+            if filter_status == 'Deleted':
+                contracten = base_query.filter(
+                    Contract.gebruiker_id == current_user.id,
+                    Contract.contract_status == 'Deleted'
+                ).all()
+            else:
+                contracten = base_query.filter(
+                    Contract.gebruiker_id == current_user.id,
+                    Contract.contract_status == 'Active'
+                ).all()
+    except Exception as e:
+        print(f"Database Query Error: {e}")
+        abort(500, description="Database query failed")
 
     print(f"Contracts Retrieved: {len(contracten)}")  # Debug print
-    for contract in contracten:
-        print(contract.id, contract.contract_status)  # Print contract details
 
-    return render_template('contract_overview.html', contracten=contracten, filter_status=filter_status)
+    # Format the contracts for the template
+    formatted_contracts = []
+    for contract, naam in contracten:
+        contract_dict = {
+            'id': contract.id,
+            'gebruiker_naam': naam,
+            'contract_begin_datum': contract.contract_begin_datum,
+            'contract_eind_datum': contract.contract_eind_datum,
+            'contract_status': contract.contract_status,
+            'contract_termen': contract.contract_termen
+        }
+        formatted_contracts.append(contract_dict)
 
+    customers = User.query.order_by(User.naam).filter(User.rol == "klant").all()
+
+    return render_template('contract_overview.html', contracten=formatted_contracts, filter_status=filter_status,
+                           klanten=customers, search_query=search_query)
 
 
 @app.route('/create_ticket', methods=['GET', 'POST'])
@@ -285,7 +369,15 @@ def create_ticket():
     if request.method == 'POST':
         ticket_naam = request.form['titel']
         ticket_beschrijving = request.form['beschrijving']
-        machine_naam = request.form['MachineNaam']
+
+        # If a machine_id is provided, get the machine name
+        if 'machine_id' in request.form and request.form['machine_id']:
+            machine_id = request.form['machine_id']
+            machine = Machine.query.get(machine_id)
+            machine_naam = machine.game_naam if machine else "Unknown Machine"
+        else:
+            # Fallback to direct input if available
+            machine_naam = request.form.get('MachineNaam', "Unknown Machine")
 
         new_ticket = Ticket(
             titel=ticket_naam,
@@ -297,8 +389,17 @@ def create_ticket():
         db.session.add(new_ticket)
         db.session.commit()
         flash('Ticket succesvol aangemaakt!', 'success')
-        return redirect(url_for('dashboard'))
-    return render_template('create_ticket.html')
+
+        # Redirect based on user role
+        if current_user.rol == 'medewerker':
+            return redirect(url_for('MedewerkerTickets'))
+        else:
+            return redirect(url_for('ticket_overview'))
+
+    # For GET requests, get all machines to populate the dropdown
+    machines = Machine.query.all()
+    return render_template('create_ticket.html', machines=machines)
+
 
 @app.route('/dashboard')
 @login_required
@@ -309,7 +410,9 @@ def dashboard():
     tickets = Ticket.query.order_by(Ticket.created_at.desc()).limit(5).all()
     contracten = Contract.query.order_by(Contract.contract_begin_datum.desc()).limit(5).all()
     customers = User.query.order_by(User.naam).filter(User.rol == "klant").all()
-    return render_template('dashboard.html', klanten=customers, tickets=tickets, contracten=contracten)
+    machines = Machine.query.all()  # Get machines for the dropdown
+    return render_template('dashboard.html', klanten=customers, tickets=tickets, contracten=contracten,
+                           machines=machines)
 
 
 @app.route('/customer_dashboard')
@@ -353,9 +456,8 @@ def add_ticket_opmerking():
     flash('Opmerking succesvol toegevoegd!', 'success')
 
     # Redirect back to the page they came from
-    referrer = request.referrer
-    if referrer and 'ticket/' in referrer:
-        return redirect(url_for('ticket_detail', ticket_id=ticket_id))
+    if current_user.rol == 'medewerker':
+        return redirect(url_for('MedewerkerTickets'))
     else:
         return redirect(url_for('ticket_overview'))
 
@@ -542,8 +644,15 @@ def ticket_overview():
             opmerkingen_by_ticket[opmerking.ticket_id] = []
         opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
 
-    return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status,
-                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query, )
+    # Get all machines for the dropdown
+    machines = Machine.query.all()
+
+    return render_template('ticket_overview.html',
+                           tickets=tickets,
+                           filter_status=filter_status,
+                           opmerkingen_by_ticket=opmerkingen_by_ticket,
+                           search_query=search_query,
+                           machines=machines)
 
 
 @app.route('/MedewerkerTickets')
@@ -591,10 +700,20 @@ def MedewerkerTickets():
         if opmerking.ticket_id not in opmerkingen_by_ticket:
             opmerkingen_by_ticket[opmerking.ticket_id] = []
         opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
+
+    # Get all customers for the dropdown
     customers = User.query.order_by(User.naam).filter(User.rol == "klant").all()
 
-    return render_template('MedewerkerTickets.html', tickets=tickets, filter_status=filter_status,
-                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query, klanten=customers)
+    # Get all machines for the dropdown
+    machines = Machine.query.all()
+
+    return render_template('medewerkertickets.html',
+                           tickets=tickets,
+                           filter_status=filter_status,
+                           opmerkingen_by_ticket=opmerkingen_by_ticket,
+                           search_query=search_query,
+                           klanten=customers,
+                           machines=machines)
 
 # logout functie
 @app.route('/logout')
@@ -602,6 +721,116 @@ def MedewerkerTickets():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+
+# Machine routes
+@app.route('/machines')
+@login_required
+def machines_overview():
+    search_query = request.args.get('search', '')
+
+    # Base query
+    query = Machine.query
+
+    # Apply search filter if provided
+    if search_query:
+        query = query.filter(
+            (Machine.game_naam.like(f'%{search_query}%')) |  # Search by game name
+            (Machine.fabrikant.like(f'%{search_query}%'))  # Search by manufacturer
+        )
+
+    machines = query.all()
+
+    return render_template('machines.html', machines=machines, search_query=search_query)
+
+
+@app.route('/create_machine', methods=['POST'])
+@login_required
+@role_required('medewerker')
+def create_machine():
+    if request.method == 'POST':
+        game_naam = request.form['game_naam']
+        publicatiedatum_str = request.form.get('publicatiedatum')
+        fabrikant = request.form.get('fabrikant', '')
+        voorraad_str = request.form.get('voorraad', '0')
+
+        # Convert date string to date object if provided
+        publicatiedatum = None
+        if publicatiedatum_str:
+            try:
+                publicatiedatum = datetime.strptime(publicatiedatum_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+        # Convert voorraad to integer
+        try:
+            voorraad = int(voorraad_str)
+        except ValueError:
+            voorraad = 0
+
+        new_machine = Machine(
+            game_naam=game_naam,
+            publicatiedatum=publicatiedatum,
+            fabrikant=fabrikant,
+            voorraad=voorraad
+        )
+
+        db.session.add(new_machine)
+        db.session.commit()
+
+        flash('Machine successfully added!', 'success')
+        return redirect(url_for('machines_overview'))
+
+
+@app.route('/edit_machine', methods=['POST'])
+@login_required
+@role_required('medewerker')
+def edit_machine():
+    if request.method == 'POST':
+        machine_id = request.form['machine_id']
+        game_naam = request.form['game_naam']
+        publicatiedatum_str = request.form.get('publicatiedatum')
+        fabrikant = request.form.get('fabrikant', '')
+        voorraad_str = request.form.get('voorraad', '0')
+
+        machine = Machine.query.get_or_404(machine_id)
+
+        # Convert date string to date object if provided
+        publicatiedatum = None
+        if publicatiedatum_str:
+            try:
+                publicatiedatum = datetime.strptime(publicatiedatum_str, '%Y-%m-%d').date()
+            except ValueError:
+                pass
+
+        # Convert voorraad to integer
+        try:
+            voorraad = int(voorraad_str)
+        except ValueError:
+            voorraad = 0
+
+        machine.game_naam = game_naam
+        machine.publicatiedatum = publicatiedatum
+        machine.fabrikant = fabrikant
+        machine.voorraad = voorraad
+
+        db.session.commit()
+
+        flash('Machine successfully updated!', 'success')
+        return redirect(url_for('machines_overview'))
+
+
+@app.route('/delete_machine/<int:id>', methods=['POST'])
+@login_required
+@role_required('medewerker')
+def delete_machine(id):
+    machine = Machine.query.get_or_404(id)
+
+    db.session.delete(machine)
+    db.session.commit()
+
+    flash('Machine successfully deleted!', 'success')
+    return redirect(url_for('machines_overview'))
 
 
 if __name__ == '__main__':

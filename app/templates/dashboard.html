@@ -11,7 +11,9 @@
 <body>
 <header class="header">
     <div class="container header-container">
-        <div class="logo">FIREARCADE</div>
+        <a href="/dashboard">
+            <div class="logo">FIREARCADE</div>
+        </a>
         <div class="nav-buttons">
             <a href="/MedewerkerTickets">
                 <button class="action-btn">Tickets</button>
@@ -21,6 +23,9 @@
             </a>
             <a href="/KlantOverzicht">
                 <button class="action-btn">Gebruikers</button>
+            </a>
+            <a href="/machines">
+                <button class="action-btn">Machines</button>
             </a>
             <a href="/logout">
                 <button class="action-btn" style="background: #A200C1">Uitloggen</button>
@@ -53,7 +58,7 @@
                     {% endfor %}
                 </div>
                 <div class="view-all-btn-container">
-                    <a href="{{ url_for('ticket_overview') }}" class="view-all-btn">View All Tickets</a>
+                    <a href="{{ url_for('MedewerkerTickets') }}" class="view-all-btn">View All Tickets</a>
                 </div>
             </div>
 
@@ -126,8 +131,13 @@
                                   required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="MachineNaam" class="form-label">Machine Naam</label>
-                        <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
+                        <label for="machine_id" class="form-label">Machine</label>
+                        <select class="form-select" id="machine_id" name="machine_id" required>
+                            <option value="" selected disabled>Select a machine</option>
+                            {% for machine in machines %}
+                            <option value="{{ machine.id }}">{{ machine.game_naam }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -138,7 +148,6 @@
         </div>
     </div>
 </div>
-
 <!-- Contract Creation Modal -->
 <div class="modal fade" id="createContractModal" tabindex="-1" aria-labelledby="createContractModalLabel"
      aria-hidden="true">

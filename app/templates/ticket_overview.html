@@ -171,36 +171,46 @@
     </main>
 
     <!-- Ticket Creation Modal -->
-    <div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="createTicketModalLabel">Nieuw Ticket Aanmaken</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form action="{{ url_for('create_ticket') }}" method="POST">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="titel" class="form-label">Titel</label>
-                            <input type="text" class="form-control" id="titel" name="titel" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="beschrijving" class="form-label">Beschrijving</label>
-                            <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4" required></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="MachineNaam" class="form-label">Machine Naam</label>
-                            <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
-                        <button type="submit" class="btn btn-primary">Aanmaken</button>
-                    </div>
-                </form>
+    <div class="modal fade" id="createTicketModal" tabindex="-1" aria-labelledby="createTicketModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createTicketModalLabel">Nieuw Ticket Aanmaken</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="{{ url_for('create_ticket') }}" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="klant" class="form-label">Klant</label>
+                        <select type="text" class="form-control" id="klant" name="klant" required>
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.naam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="titel" class="form-label">Titel</label>
+                        <input type="text" class="form-control" id="titel" name="titel" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="beschrijving" class="form-label">Beschrijving</label>
+                        <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4"
+                                  required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="MachineNaam" class="form-label">Machine Naam</label>
+                        <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>
+                    <button type="submit" class="btn btn-primary">Aanmaken</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
     <!-- Add Opmerking Modal -->
     <div class="modal fade" id="addOpmerkingModal" tabindex="-1" aria-labelledby="addOpmerkingModalLabel" aria-hidden="true">

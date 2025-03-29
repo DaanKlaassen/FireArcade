@@ -111,6 +111,9 @@
             <a href="/KlantOverzicht">
                 <button class="action-btn">Gebruikers</button>
             </a>
+            <a href="/machines">
+                <button class="action-btn">Machines</button>
+            </a>
             <a href="/logout">
                 <button class="action-btn" style="background: #A200C1">Uitloggen</button>
             </a>
@@ -119,11 +122,6 @@
 </header>
 
 <main class="container">
-    <div class="back-link-container">
-        <a href="{{ url_for('dashboard') }}" class="back-link">
-            <i class="bi bi-arrow-left"></i> Back to Dashboard
-        </a>
-    </div>
 
     <div class="page-header">
         <h1>Ticket Overview</h1>
@@ -284,8 +282,13 @@
                                   required></textarea>
                     </div>
                     <div class="mb-3">
-                        <label for="MachineNaam" class="form-label">Machine Naam</label>
-                        <input type="text" class="form-control" id="MachineNaam" name="MachineNaam" required>
+                        <label for="machine_id" class="form-label">Machine</label>
+                        <select class="form-select" id="machine_id" name="machine_id" required>
+                            <option value="" selected disabled>Select a machine</option>
+                            {% for machine in machines %}
+                            <option value="{{ machine.id }}">{{ machine.game_naam }}</option>
+                            {% endfor %}
+                        </select>
                     </div>
                 </div>
                 <div class="modal-footer">

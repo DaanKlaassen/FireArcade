@@ -78,23 +78,15 @@
             <a href="/KlantOverzicht">
                 <button class="action-btn">Gebruikers</button>
             </a>
+            <a href="/machines">
+                <button class="action-btn">Machines</button>
+            </a>
             <a href="/logout">
                 <button class="action-btn" style="background: #A200C1">Uitloggen</button>
             </a>
         </div>
     </div>
 </header>
-
-<div class="back-link-container">
-    <a href="{{ url_for('dashboard') }}" class="back-link">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-arrow-left"
-             viewBox="0 0 16 16">
-            <path fill-rule="evenodd"
-                  d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
-        </svg>
-        Terug naar Dashboard
-    </a>
-</div>
 
 <main class="container">
     <div class="page-header">
@@ -112,10 +104,22 @@
                class="filter-link {% if filter_status == 'Deleted' %}active{% endif %}">Verwijderde Contracten</a>
         </div>
 
+        <form action="{{ url_for('contract_overview') }}" method="GET" class="d-flex">
+            <input type="hidden" name="status" value="{{ filter_status }}">
+            <input type="text" name="search" class="form-control form-control-sm me-2"
+                   placeholder="Search tickets..." value="{{ search_query }}">
+            <button type="submit" class="btn btn-sm btn-primary">Search</button>
+            {% if search_query %}
+            <a href="{{ url_for('contract_overview', status=filter_status) }}"
+               class="btn btn-sm btn-outline-secondary ms-2">Clear</a>
+            {% endif %}
+        </form>
+
         <div class="table-responsive">
             <table class="table custom-table">
                 <thead>
                 <tr>
+                    <th>Gebruiker</th>
                     <th>Begin Datum</th>
                     <th>Eind Datum</th>
                     <th>Status</th>
@@ -126,6 +130,7 @@
                 <tbody>
                 {% for contract in contracten %}
                 <tr>
+                    <td>{{ contract.gebruiker_naam }}</td>
                     <td>{{ contract.contract_begin_datum.strftime('%Y-%m-%d') }}</td>
                     <td>{{ contract.contract_eind_datum.strftime('%Y-%m-%d') }}</td>
                     <td><span class="status-badge status-{{ contract.contract_status.lower() }}">{{ contract.contract_status }}</span>
@@ -174,7 +179,6 @@
 
 </main>
 
-<!-- Contract Creation Modal -->
 <div class="modal fade" id="createContractModal" tabindex="-1" aria-labelledby="createContractModalLabel"
      aria-hidden="true">
     <div class="modal-dialog">
@@ -183,8 +187,16 @@
                 <h5 class="modal-title" id="createContractModalLabel">Nieuw Contract Aanmaken</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ url_for('create_contract') }}" method="POST">
+            <form action="{{ url_for('contract_overview') }}" method="POST">
                 <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="gebruiker" class="form-label">Klant</label>
+                        <select type="text" class="form-control" id="gebruiker" name="gebruiker" required>
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.naam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     <div class="mb-3">
                         <label for="contract_begin_datum" class="form-label">Begin Datum</label>
                         <input type="date" class="form-control" id="contract_begin_datum" name="contract_begin_datum"
