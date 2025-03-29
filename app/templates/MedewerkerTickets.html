@@ -269,9 +269,9 @@
                     <div class="mb-3">
                         <label for="klant" class="form-label">Klant</label>
                         <select type="text" class="form-control" id="klant" name="klant" required>
-                                {% for klant in klanten %}
-                                <option value="{{ klant.id }}">{{ klant.naam }}</option>
-                                {% endfor %}
+                            {% for klant in klanten %}
+                            <option value="{{ klant.id }}">{{ klant.naam }}</option>
+                            {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">

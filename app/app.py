@@ -258,20 +258,25 @@ def create_contract():
 def contract_overview():
     filter_status = request.args.get('status', 'Active')  # Default to Active
 
-    # For monteurs, show all contracts if they have the role
+    print(f"Filter Status: {filter_status}")  # Debug print
+
     if current_user.rol == 'monteur':
         if filter_status == 'Deleted':
             contracten = Contract.query.filter_by(contract_status='Deleted').all()
         else:
             contracten = Contract.query.filter_by(contract_status='Active').all()
     else:
-        # For regular customers, only show their own contracts
         if filter_status == 'Deleted':
             contracten = Contract.query.filter_by(gebruiker_id=current_user.id, contract_status='Deleted').all()
         else:
             contracten = Contract.query.filter_by(gebruiker_id=current_user.id, contract_status='Active').all()
 
+    print(f"Contracts Retrieved: {len(contracten)}")  # Debug print
+    for contract in contracten:
+        print(contract.id, contract.contract_status)  # Print contract details
+
     return render_template('contract_overview.html', contracten=contracten, filter_status=filter_status)
+
 
 
 @app.route('/create_ticket', methods=['GET', 'POST'])
@@ -332,7 +337,7 @@ def add_ticket_opmerking():
     ticket = Ticket.query.get_or_404(ticket_id)
 
     # Check if the user has permission to add a comment to this ticket
-    if current_user.rol != 'monteur' and ticket.gebruiker_id != current_user.id:
+    if current_user.rol != 'medewerker' and ticket.gebruiker_id != current_user.id:
         flash('Je hebt geen toestemming om een opmerking toe te voegen aan dit ticket.', 'error')
         return redirect(url_for('ticket_overview'))
 
@@ -505,7 +510,7 @@ def ticket_overview():
         )
 
     # Apply status filter
-    if current_user.rol == 'monteur':
+    if current_user.rol == 'medewerker':
         if filter_status == 'Deleted':
             query = query.filter_by(status='Deleted')
         else:
@@ -538,7 +543,7 @@ def ticket_overview():
         opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
 
     return render_template('ticket_overview.html', tickets=tickets, filter_status=filter_status,
-                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query)
+                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query, )
 
 
 @app.route('/MedewerkerTickets')
@@ -586,9 +591,10 @@ def MedewerkerTickets():
         if opmerking.ticket_id not in opmerkingen_by_ticket:
             opmerkingen_by_ticket[opmerking.ticket_id] = []
         opmerkingen_by_ticket[opmerking.ticket_id].append(opmerking)
+    customers = User.query.order_by(User.naam).filter(User.rol == "klant").all()
 
     return render_template('MedewerkerTickets.html', tickets=tickets, filter_status=filter_status,
-                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query)
+                           opmerkingen_by_ticket=opmerkingen_by_ticket, search_query=search_query, klanten=customers)
 
 # logout functie
 @app.route('/logout')
