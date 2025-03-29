@@ -13,7 +13,9 @@
         <div class="container header-container">
             <div class="logo">FIREARCADE</div>
             <div class="nav-buttons">
-                <a style="text-underline: none !important;" href="/logout"><button class="action-btn">Uitloggen</button></a>
+                <a style="text-underline: none !important;" href="/logout">
+                    <button class="action-btn">Uitloggen</button>
+                </a>
             </div>
         </div>
     </header>
@@ -26,7 +28,7 @@
                 <div class="card welcome-card">
                     <h2>Welcome back, {{ current_user.naam }}!</h2>
                 </div>
-                
+
                 <!-- Recent Activity -->
                 <div class="card">
                     <h2>My Recent Tickets</h2>
@@ -41,8 +43,11 @@
                         </div>
                         {% endfor %}
                     </div>
+                    <div class="view-all-btn-container">
+                        <a href="{{ url_for('ticket_overview') }}" class="view-all-btn">View All Tickets</a>
+                    </div>
                 </div>
-                
+
                 <!-- Contracts Section -->
                 <div class="card">
                     <h2>My Contracts</h2>
@@ -94,6 +99,15 @@
                             <label for="beschrijving" class="form-label">Beschrijving</label>
                             <textarea class="form-control" id="beschrijving" name="beschrijving" rows="4" required></textarea>
                         </div>
+                        <div class="mb-3">
+                        <label for="machine_id" class="form-label">Machine</label>
+                        <select class="form-select" id="machine_id" name="machine_id" required>
+                            <option value="" selected disabled>Select a machine</option>
+                            {% for machine in machines %}
+                            <option value="{{ machine.id }}">{{ machine.game_naam }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Sluiten</button>

@@ -423,8 +423,9 @@ def customer_dashboard():
     tickets = Ticket.query.filter_by(gebruiker_id=current_user.id).order_by(Ticket.created_at.desc()).limit(5).all()
     contracten = Contract.query.filter_by(gebruiker_id=current_user.id).order_by(
         Contract.contract_begin_datum.desc()).limit(5).all()
+    machines = Machine.query.all()
 
-    return render_template('customer_dashboard.html', tickets=tickets, contracten=contracten)
+    return render_template('customer_dashboard.html', machines=machines, tickets=tickets, contracten=contracten)
 
 
 @app.route('/add_ticket_opmerking', methods=['POST'])
@@ -439,11 +440,6 @@ def add_ticket_opmerking():
 
     ticket = Ticket.query.get_or_404(ticket_id)
 
-    # Check if the user has permission to add a comment to this ticket
-    if current_user.rol != 'medewerker' and ticket.gebruiker_id != current_user.id:
-        flash('Je hebt geen toestemming om een opmerking toe te voegen aan dit ticket.', 'error')
-        return redirect(url_for('ticket_overview'))
-
     new_opmerking = TicketOpmerking(
         ticket_id=ticket_id,
         opmerking=opmerking,
@@ -455,11 +451,9 @@ def add_ticket_opmerking():
 
     flash('Opmerking succesvol toegevoegd!', 'success')
 
-    # Redirect back to the page they came from
-    if current_user.rol == 'medewerker':
-        return redirect(url_for('MedewerkerTickets'))
-    else:
-        return redirect(url_for('ticket_overview'))
+    # Redirect terug naar de juiste pagina
+    return redirect(url_for('MedewerkerTickets') if current_user.rol == 'medewerker' else url_for('ticket_overview'))
+
 
 
 @app.route('/KlantOverzicht')
@@ -561,7 +555,7 @@ def ticket_detail(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
 
     # Check if the user has permission to view this ticket
-    if current_user.rol != 'monteur' and ticket.gebruiker_id != current_user.id:
+    if current_user.rol != 'medewerker' and ticket.gebruiker_id != current_user.id:
         flash('You do not have permission to view this ticket.', 'error')
         return redirect(url_for('dashboard'))
 
@@ -715,6 +709,7 @@ def MedewerkerTickets():
                            klanten=customers,
                            machines=machines)
 
+
 # logout functie
 @app.route('/logout')
 @login_required
@@ -726,6 +721,7 @@ def logout():
 # Machine routes
 @app.route('/machines')
 @login_required
+@role_required('medewerker')
 def machines_overview():
     search_query = request.args.get('search', '')
 
