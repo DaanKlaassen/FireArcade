@@ -70,8 +70,8 @@
             <div>
                 <a href="{{ url_for('ticket_overview', status='Active') }}"
                    class="filter-link {% if filter_status == 'Active' %}active{% endif %}">Active Tickets</a>
-                <a href="{{ url_for('ticket_overview', status='Deleted') }}"
-                   class="filter-link {% if filter_status == 'Deleted' %}active{% endif %}">Deleted Tickets</a>
+                <a href="{{ url_for('ticket_overview', status='Gesloten') }}"
+                   class="filter-link {% if filter_status == 'Gesloten' %}active{% endif %}">Gesloten Tickets</a>
             </div>
             <div>
                 <form action="{{ url_for('ticket_overview') }}" method="GET" class="d-flex">

@@ -58,6 +58,53 @@ class Machine(db.Model):
     voorraad = db.Column(db.Integer, nullable=True)
 
 
+# Ticket Model
+class Ticket(db.Model):
+    __tablename__ = 'ticket'
+    id = db.Column(db.Integer, primary_key=True)
+    gebruiker_id = db.Column(db.Integer, db.ForeignKey('gebruiker.id'), nullable=False)
+    titel = db.Column(db.String(255), nullable=False)
+    beschrijving = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(50), default='Open')  # Active or Deleted
+    toegewezen = db.Column(db.String(255), default='Nog niet toegewezen')
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    MachineNaam = db.Column(db.String(255), nullable=False)
+
+    gebruiker = db.relationship('User', backref=db.backref('tickets', lazy=True))
+
+
+# Ticket Opmerking Model
+class TicketOpmerking(db.Model):
+    __tablename__ = 'ticketopmerkingen'
+    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False, primary_key=True)
+    opmerking = db.Column(db.Text, nullable=False)
+    naam = db.Column(db.String(100), nullable=False)
+
+    def __init__(self, ticket_id, opmerking, naam):
+        self.ticket_id = ticket_id
+        self.opmerking = opmerking
+        self.naam = naam
+
+
+# Contract Model
+class Contract(db.Model):
+    __tablename__ = 'contract'
+    id = db.Column(db.Integer, primary_key=True)
+    gebruiker_id = db.Column(db.Integer, db.ForeignKey('gebruiker.id'))
+    contract_begin_datum = db.Column(db.DateTime, nullable=False)
+    contract_eind_datum = db.Column(db.DateTime, nullable=False)
+    contract_status = db.Column(db.String(50), default='Active')  # Active or Deleted
+    contract_termen = db.Column(db.Text)
+    gebruiker = db.relationship('User', backref=db.backref('contracten', lazy=True))
+
+    def __init__(self, gebruiker_id, contract_begin_datum, contract_eind_datum, contract_status, contract_termen):
+        self.gebruiker_id = gebruiker_id
+        self.contract_begin_datum = contract_begin_datum
+        self.contract_eind_datum = contract_eind_datum
+        self.contract_status = contract_status
+        self.contract_termen = contract_termen
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -189,53 +236,6 @@ def register(redirect_uri=None):
         return redirect(url_for(redirect_uri))
     else:
         return render_template('KlantenRegistreren.html')
-
-
-# Ticket Model
-class Ticket(db.Model):
-    __tablename__ = 'ticket'
-    id = db.Column(db.Integer, primary_key=True)
-    gebruiker_id = db.Column(db.Integer, db.ForeignKey('gebruiker.id'), nullable=False)
-    titel = db.Column(db.String(255), nullable=False)
-    beschrijving = db.Column(db.Text, nullable=False)
-    status = db.Column(db.String(50), default='Open')  # Active or Deleted
-    toegewezen = db.Column(db.String(255), default='Nog niet toegewezen')
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    MachineNaam = db.Column(db.String(255), nullable=False)
-
-    gebruiker = db.relationship('User', backref=db.backref('tickets', lazy=True))
-
-
-# Ticket Opmerking Model
-class TicketOpmerking(db.Model):
-    __tablename__ = 'ticketopmerkingen'
-    ticket_id = db.Column(db.Integer, db.ForeignKey('ticket.id'), nullable=False, primary_key=True)
-    opmerking = db.Column(db.Text, nullable=False)
-    naam = db.Column(db.String(100), nullable=False)
-
-    def __init__(self, ticket_id, opmerking, naam):
-        self.ticket_id = ticket_id
-        self.opmerking = opmerking
-        self.naam = naam
-
-
-# Contract Model
-class Contract(db.Model):
-    __tablename__ = 'contract'
-    id = db.Column(db.Integer, primary_key=True)
-    gebruiker_id = db.Column(db.Integer, db.ForeignKey('gebruiker.id'))
-    contract_begin_datum = db.Column(db.DateTime, nullable=False)
-    contract_eind_datum = db.Column(db.DateTime, nullable=False)
-    contract_status = db.Column(db.String(50), default='Active')  # Active or Deleted
-    contract_termen = db.Column(db.Text)
-    gebruiker = db.relationship('User', backref=db.backref('contracten', lazy=True))
-
-    def __init__(self, gebruiker_id, contract_begin_datum, contract_eind_datum, contract_status, contract_termen):
-        self.gebruiker_id = gebruiker_id
-        self.contract_begin_datum = contract_begin_datum
-        self.contract_eind_datum = contract_eind_datum
-        self.contract_status = contract_status
-        self.contract_termen = contract_termen
 
 
 @app.route('/create_contract', methods=['GET', 'POST'])
@@ -455,7 +455,6 @@ def add_ticket_opmerking():
     return redirect(url_for('MedewerkerTickets') if current_user.rol == 'medewerker' else url_for('ticket_overview'))
 
 
-
 @app.route('/KlantOverzicht')
 @login_required
 @role_required('medewerker')
@@ -607,14 +606,14 @@ def ticket_overview():
 
     # Apply status filter
     if current_user.rol == 'medewerker':
-        if filter_status == 'Deleted':
-            query = query.filter_by(status='Deleted')
+        if filter_status == 'Gesloten':
+            query = query.filter_by(status='Gesloten')
         else:
             query = query.filter_by(status='Open')
     else:
         # For regular customers, only show their own tickets
-        if filter_status == 'Deleted':
-            query = query.filter_by(gebruiker_id=current_user.id, status='Deleted')
+        if filter_status == 'Gesloten':
+            query = query.filter_by(gebruiker_id=current_user.id, status='Gesloten')
         else:
             query = query.filter_by(gebruiker_id=current_user.id, status='Open')
 
